@@ -1,8 +1,8 @@
 {
-  "name": "linkdle",
+  "name": "hidle",
   "version": "0.1.0",
   "private": true,
-  "homepage": "http://rpretzels.github.io/linkdle",
+  "homepage": "http://rpretzels.github.io/hidle",
   "dependencies": {
     "@headlessui/react": "^1.4.2",
     "@testing-library/jest-dom": "^5.16.1",

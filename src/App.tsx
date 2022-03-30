@@ -25,8 +25,6 @@ export const difficulty = {
 
 type State = {
   answer: () => string
-  answer1: () => string
-  answer3: () => string
   gameState: string
   board: string[][]
   cellStatuses: string[][]
@@ -36,119 +34,14 @@ type State = {
   submittedInvalidWord: boolean
 }
 
-
-function filterl(rw:string) {
-	var cstart:string = "A";
-	var scode:number = cstart.charCodeAt(0);
-	var c:string;
-	var idx:number;
-	var rn:number;
-
-	let lfilter = new Array(26);
-
-      	for (let i = 0; i < 26; i++) {
-		lfilter[i] = 0;
-	}
-
-	lfilter[0] = 60;
-	lfilter["D".charCodeAt(0) - scode] = 60;
-	lfilter["E".charCodeAt(0) - scode] = 25;
-	lfilter["H".charCodeAt(0) - scode] = 60;
-	lfilter["I".charCodeAt(0) - scode] = 30;
-	lfilter["K".charCodeAt(0) - scode] = 14;
-	lfilter["L".charCodeAt(0) - scode] = 36;
-	lfilter["N".charCodeAt(0) - scode] = 20;
-	lfilter["O".charCodeAt(0) - scode] = 30;
-	lfilter["T".charCodeAt(0) - scode] = 40;
-	lfilter["U".charCodeAt(0) - scode] = 30;
-	lfilter["V".charCodeAt(0) - scode] = 60;
-	lfilter["Y".charCodeAt(0) - scode] = 12;
-
-	c = rw[0];
-	idx = c.charCodeAt(0) - scode;
-	if (lfilter[idx] === 0)
-		return 0;
-
-	rn = Math.floor(Math.random() * 100);
-
-	if (lfilter[idx] < rn)
-		return 1;
-
-	return 0;
-}
-
-function getrsz(max:number) {
-	if ((max > 2) && ((Math.floor(Math.random() * 100)) > 65))
-		return 3;
-	if ((max > 1) && ((Math.floor(Math.random() * 100)) > 55))
-		return 2;
-	return 1;
-}
-
-function getR(count:number, pword:string) {
-	var ans:string = "aa"
-
-      for (let i = 0; i < (2 * answers.length); i++) {
- 	const ridx1 = Math.floor(Math.random() * answers.length);
-	ans = answers[ridx1].toUpperCase();
-
-	if (pword[4] !== ans[count - 1]) {continue};
-	if (count > 1) {
-		if (pword[3] !== ans[count - 2]) {continue};
-	}
-	if (count > 2) {
-		if (pword[2] !== ans[count - 3]) {continue};
-	}	
-
-	return ans;
-      }
-      return "X";
-}
-
 function App() {
 	var ans:string = "aa";
-	var a3:string = "aa";
-	var a1:string = "aa";
-	var len:number = 0;
 
-	// Choose 1st of 3 words	
-      	for (let i = 0; i < answers.length; i++) {
-  		const randomIndex = Math.floor(Math.random() * answers.length);
- 		a1 = answers[randomIndex].toUpperCase();
-
-		//Try not to have too many candidates that end in "y" or "e"
-		if ((a1[4] === 'Y') && ((Math.floor(Math.random() * 100)) < 50))
-			continue;
-		if ((a1[4] === 'E') && ((Math.floor(Math.random() * 100)) < 50))
-			continue;
-	}
-
-      	for (let i = 0; i < answers.length; i++) {
-		var filtres:number;
-
-		len = getrsz(3);
-		ans = getR(len, a1);
-		if (ans === "X")
-			continue;
-
-		filtres = filterl(ans);
-		if (filtres === 1)
-			continue;
-
-		break;
-	}
-
-      	for (let i = 0; i < answers.length; i++) {
-		len = getrsz(4 - len);
-		a3 = getR(len, ans);
-		if (a3 !== "X")
-			break;
-	}
+  	const randomIndex = Math.floor(Math.random() * answers.length);
+ 	ans = answers[randomIndex].toUpperCase();
 
   const initialStates: State = {
     answer: () => ans,
-    answer1: () => a1,
-    answer3: () => a3,
     gameState: state.playing,
     board: [
       ['', '', '', '', ''],
@@ -172,8 +65,6 @@ function App() {
   }
 
   const [answer, setAnswer] = useLocalStorage('stateAnswer', initialStates.answer())
-  const [answer1, setAnswer1] = useLocalStorage('stateAnswer1', initialStates.answer1())
-  const [answer3, setAnswer3] = useLocalStorage('stateAnswer3', initialStates.answer3())
   const [gameState, setGameState] = useLocalStorage('stateGameState', initialStates.gameState)
   const [board, setBoard] = useLocalStorage('stateBoard', initialStates.board)
   const [cellStatuses, setCellStatuses] = useLocalStorage(
@@ -293,6 +184,9 @@ function App() {
   }
 
   const onEnterPress = () => {
+	var rcount:number = 0;
+	var rl:number;
+
     const word = board[currentRow].join('')
     const [valid, _err] = isValidWord(word)
     if (!valid) {
@@ -304,8 +198,26 @@ function App() {
 
     if (currentRow === 6) return
 
-    updateCellStatuses(word, currentRow)
-    updateLetterStatuses(word)
+	// get letter # to be hidden
+	rl = Math.floor(Math.random() * 5);
+
+	// peek at guess and see it will be a match;
+	// if so, then no letter-hiding...
+	for (let i = 0; i < 5; i++) {
+        if (word[i] === answer[i])
+		rcount++;
+	}
+	if (rcount === 5) {
+		rl = answer.length + 1;
+	}
+
+    updateCellStatuses(word, currentRow, rl)
+    updateLetterStatuses(word, rl)
+
+    if (rcount !== 5) {
+	board[currentRow][rl] = '';
+    }
+
     setCurrentRow((prev: number) => prev + 1)
     setCurrentCol(0)
 
@@ -329,7 +241,7 @@ function App() {
     setCurrentCol((prev: number) => prev - 1)
   }
 
-  const updateCellStatuses = (word: string, rowNumber: number) => {
+  const updateCellStatuses = (word: string, rowNumber: number, rl: number) => {
     const fixedLetters: { [key: number]: string } = {}
     setCellStatuses((prev: any) => {
       const newCellStatuses = [...prev]
@@ -339,11 +251,17 @@ function App() {
 
       // set all to gray
       for (let i = 0; i < wordLength; i++) {
+	if (i === rl)
+		continue;
+
         newCellStatuses[rowNumber][i] = status.gray
       }
 
       // check greens
       for (let i = wordLength - 1; i >= 0; i--) {
+	if (i === rl) {
+		continue;
+	}
         if (word[i] === answer[i]) {
           newCellStatuses[rowNumber][i] = status.green
           answerLetters.splice(i, 1)
@@ -353,6 +271,9 @@ function App() {
 
       // check yellows
       for (let i = 0; i < wordLength; i++) {
+	if (i === rl) {
+		continue;
+	}
         if (answerLetters.includes(word[i]) && newCellStatuses[rowNumber][i] !== status.green) {
           newCellStatuses[rowNumber][i] = status.yellow
           answerLetters.splice(answerLetters.indexOf(word[i]), 1)
@@ -404,11 +325,14 @@ function App() {
     setLongestStreak,
   ])
 
-  const updateLetterStatuses = (word: string) => {
+  const updateLetterStatuses = (word: string, rl: number) => {
     setLetterStatuses((prev: { [key: string]: string }) => {
       const newLetterStatuses = { ...prev }
       const wordLength = word.length
       for (let i = 0; i < wordLength; i++) {
+	if (i === rl) {
+		continue;
+	}
         if (newLetterStatuses[word[i]] === status.green) continue
 
         if (word[i] === answer[i]) {
@@ -429,8 +353,6 @@ function App() {
     }
 
     setAnswer(initialStates.answer())
-    setAnswer1(initialStates.answer1())
-    setAnswer3(initialStates.answer3())
     setGameState(initialStates.gameState)
     setBoard(initialStates.board)
     setCellStatuses(initialStates.cellStatuses)
@@ -487,7 +409,7 @@ function App() {
             <Settings />
           </button>
           <h1 className="flex-1 text-center text-xl xxs:text-2xl sm:text-4xl tracking-wide font-bold">
-            Linkdle
+            Hidle
           </h1>
           <button
             type="button"
@@ -497,10 +419,6 @@ function App() {
             <Info />
           </button>
         </header>
-
-     <div className="justify-center mt-2 mx-5 text-2xl text-black dark:text-white text-center">
-        Connect: {answer1}-{answer3}
-     </div>
 
         <div className="flex items-center flex-col py-3 flex-1 justify-center relative">
           <div className="relative">
