@@ -1,9 +1,6 @@
 name: Build & deploy
 
 on:
-  workflow_call:
-    branches:
-      - main
   push:
     branches:
       - main
